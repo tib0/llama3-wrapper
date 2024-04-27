@@ -1,13 +1,13 @@
 {
-  "name": "typescript-node-module-template",
+  "name": "llama-gen-post",
   "author": "Tib0",
   "license": "MIT",
   "version": "0.0.1",
   "description": 
-    "Typescript Node Module Template (tnmt) by Tib0, featuring jest, tsup, vscode, pnpm, eslint and prettier.",
+    "Llama module test.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tib0/tib0-typescript-node-module-template.git"
+    "url": "https://github.com/tib0/llama-gen-post.git"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
