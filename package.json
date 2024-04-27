@@ -3,8 +3,7 @@
   "author": "Tib0",
   "license": "MIT",
   "version": "0.0.1",
-  "description": 
-    "Llama module test.",
+  "description": "Llama module test.",
   "repository": {
     "type": "git",
     "url": "https://github.com/tib0/llama-gen-post.git"
