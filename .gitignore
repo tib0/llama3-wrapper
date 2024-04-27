@@ -1,0 +1,32 @@
+node_modules
+dist
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# dotenv environment variables file
+.env
+.env.*
+
+# Cache folder
+.cache
+
+# MAC OS system file
+.DS_Store
+
+# Project
+#.idea/
+#.vscode/
+#tools/dev
