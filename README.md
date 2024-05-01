@@ -1,67 +1,100 @@
 ![logo](./.github/tnmt-logo.png)
 
-Sample node module template by Tib0. Shipped with:
-
-- [x] Github's actions
-- [x] VSCode config
-- [x] Node config
-- [x] TypeScript
-- [x] Prettier
-- [x] Eslint
-- [x] Tsup
-- [x] Pnpm
-- [x] Jest
+Lllama node cpp wrapper using Llama3 underneath.
 
 # USE
 
-Follow these steps to make it yours :
+Follow these steps to make it yours:
 
-1. Clone the repository :
-
-```sh
-git clone https://github.com/tib0/typescript-node-module-template.git
-```
-
-2. Update package.json entries (author, name...)
+1. Install module:
 
 ```sh
-code typescript-node-module-template\package.json
+npm i llama-gen-post
 ```
 
-3. Rename folder `typescript-node-module-template` to whatever suit your needs.
+Or
 
 ```sh
-mv typescript-node-module-template\ <target name>\
+pnpm i llama-gen-post
 ```
 
-4. Remove git history :
+Or
 
 ```sh
-rm -rf .git && git init && git add . && git commit -m "Initial commit"
+yarn add llama-gen-post
 ```
 
-5. Push :
+2. Add your GGUF model path in a .env file at the root of your project:
 
 ```sh
-git push
+LLAMA_MODELS_LOCATION=/Users/me/example/models/
+LLAMA_MODEL_NAME=Meta-8b.gguf
 ```
 
-# WARNING
+3. Sample chat-like usage:
 
-Warning triggered when using eslint in version 9.1.1 due to unmet dependency, I had to downgrade to eslint@8.56.0. It avoids using two versions of the same dependency.
+```ts
+import { session, type ChatHistoryItem } from 'llama-gen-post';
+import readline from 'readline';
+import { spawn } from 'node:child_process';
 
-Warning seen:
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-> "eslint": "^9.1.1" cause WARN  Issues with peer dependencies found
+const run = async () => {
+  console.log(`# START LLAMA CHAT`);
+  console.log(`\n`);
 
-```txt
-.
-├─┬ @typescript-eslint/eslint-plugin 7.7.1
-│ ├── ✕ unmet peer eslint@^8.56.0: found 9.1.1
-│ └─┬ @typescript-eslint/type-utils 7.7.1
-│   ├── ✕ unmet peer eslint@^8.56.0: found 9.1.1
-│   └─┬ @typescript-eslint/utils 7.7.1
-│     └── ✕ unmet peer eslint@^8.56.0: found 9.1.1
-└─┬ @typescript-eslint/parser 7.7.1
-  └── ✕ unmet peer eslint@^8.56.0: found 9.1.1
+  console.log(`# Feeding history traces`);
+  const history: ChatHistoryItem[] = [
+    { type: 'user', text: 'Hey.' },
+    { type: 'model', response: ['Hello !'] },
+  ];
+
+  console.log(`# Waiting seat allocation`);
+  const session = await _session(
+    'You are an assistant, you speak in english, you must be concise and helpfull.',
+    history,
+  );
+
+  console.log(`# Prompt ready`);
+
+  console.log(`# Activated TTS (voice)`);
+
+  console.log(`\n`);
+  rl.setPrompt('1 > ');
+  rl.prompt();
+  let i = 1;
+
+  rl.on('line', async (q) => {
+    if (!q || q === '' || q === 'exit' || q === 'quit' || q === 'q') {
+      rl.close();
+    } else {
+      const a = await session.prompt(q);
+      console.log(`${i} @ ${a}`);
+      spawn('say', [a]);
+      console.log(`\n`);
+      i++;
+    }
+    rl.setPrompt(`${i} > `);
+    rl.prompt();
+  }).on('close', async () => {
+    console.log(`\n`);
+    console.log(`Disposing session...`);
+    session.dispose();
+
+    console.log(`\n`);
+    const a = session.getChatHistory();
+    console.log(`History @ ${JSON.stringify(a)}`);
+
+    console.log(`\n`);
+    console.log('# END LLAMA CHAT');
+
+    process.exit(0);
+  });
+};
+
+run();
 ```

@@ -1,6 +1,6 @@
 name: Running Code Coverage
 
-on: [push, pull_request]
+on: []
 
 jobs:
   build:
@@ -23,7 +23,6 @@ jobs:
         with:
           version: 8
           run_install: false
-
       - name: Get pnpm store directory
         shell: bash
         run: |
