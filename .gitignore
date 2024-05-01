@@ -30,3 +30,6 @@ pids
 #.idea/
 #.vscode/
 #tools/dev
+
+# LLM local models GGUF
+models

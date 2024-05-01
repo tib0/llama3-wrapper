@@ -24,7 +24,8 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "npm run build -- --watch src",
     "prepublishOnly": "pnpm foli && pnpm test && pnpm build",
-    "foli": "eslint --ext .ts,.js . && prettier \"./**\" --write --ignore-unknown"
+    "foli": "eslint --ext .ts,.js . && prettier \"./**\" --write --ignore-unknown",
+    "foli:fix": "eslint --ext .ts,.js . --fix && prettier \"./**\" --write --ignore-unknown"
   },
   "keywords": [
     "node",
@@ -57,5 +58,8 @@
         "@typescript-eslint"
       ]
     }
+  },
+  "dependencies": {
+    "node-llama-cpp": "3.0.0-beta.17"
   }
 }
