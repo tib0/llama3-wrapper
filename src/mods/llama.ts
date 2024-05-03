@@ -4,11 +4,13 @@ import { fileURLToPath } from 'url';
 
 export { type ChatHistoryItem } from 'node-llama-cpp';
 
-export async function getSession(prompt: string, history?: ChatHistoryItem[]) {
+export async function getSession(prompt: string, gpu?: 'auto' | 'cuda' | 'vulkan' | 'metal' | false, history?: ChatHistoryItem[]) {
   const { getLlama, LlamaChatSession } = (await import('node-llama-cpp')) as typeof import('node-llama-cpp');
   try {
     const __dirname = path.dirname(fileURLToPath(`file:${process.env.LLAMA_MODELS_LOCATION}`));
-    const llama = await getLlama();
+    const llama = await getLlama({
+      gpu: gpu || 'auto',
+    });
     const model = await llama.loadModel({
       modelPath: path.join(__dirname, process.env.LLAMA_MODEL_NAME),
     });
