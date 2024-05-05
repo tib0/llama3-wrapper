@@ -1,12 +1,12 @@
 {
-  "name": "llama-gen-post",
+  "name": "llama3-wrapper",
   "author": "Tib0",
   "license": "MIT",
   "version": "0.0.1",
   "description": "Llama module test.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tib0/llama-gen-post.git"
+    "url": "https://github.com/tib0/llama3-wrapper.git"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -41,6 +41,7 @@
     "@tsconfig/node21": "^21.0.3",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
+    "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.7.1",
     "eslint": "^8.56.0",
@@ -50,7 +51,8 @@
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
     "tsup": "^8.0.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "uuid": "^9.0.1"
   },
   "pnpm": {
     "peerDependencyRules": {
