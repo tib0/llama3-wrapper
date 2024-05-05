@@ -1,1 +1,1 @@
-export { getSession as getLlamaSession, type ChatHistoryItem } from './mods/llama';
+export { LlamaWrapper, type ChatHistoryItem } from './mods/llamaNodeCppWrapper';
