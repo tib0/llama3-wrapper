@@ -21,13 +21,6 @@ export interface LlamaCppInfo {
     free: number;
   };
 }
-/* 
-function getGPULayersToUse(): number | undefined {
-  if (process.platform === 'darwin' && process.arch === 'arm64') {
-    return 8;
-  }
-  return undefined;
-} */
 
 async function llamaModule(): Promise<typeof import('node-llama-cpp')> {
   return (await import('node-llama-cpp')) as typeof import('node-llama-cpp');
@@ -37,6 +30,8 @@ export class LlamaWrapper {
   private id: string;
   private session: LlamaChatSession | undefined;
   private status: LlamaStatus;
+  private errorCallback: () => void;
+  private abortController: AbortController;
 
   private setStatus(status: LlamaStatusType, payload?: string) {
     if (payload === undefined) {
@@ -94,7 +89,6 @@ export class LlamaWrapper {
 
       const model = await llama.loadModel({
         modelPath: modelPath,
-        //gpuLayers: getGPULayersToUse(),
       });
       console.log(`Model loaded. Context size is ${model.trainContextSize}; Instantiating new session.`);
 
@@ -117,11 +111,6 @@ export class LlamaWrapper {
     }
 
     this.setStatus('generating');
-    const abortController = new AbortController();
-
-    const callback = () => {
-      abortController.abort();
-    };
 
     let chunks: string = '';
     try {
@@ -133,12 +122,12 @@ export class LlamaWrapper {
             onToken(decoded);
           }
         },
-        signal: abortController.signal,
+        signal: this.abortController.signal,
       });
       this.setStatus('ready');
       return answer;
     } catch (err) {
-      callback();
+      this.errorCallback();
       this.setStatus('ready');
       return chunks;
     }
@@ -151,18 +140,12 @@ export class LlamaWrapper {
 
     this.setStatus('generating');
 
-    const abortController = new AbortController();
-
-    const callback = () => {
-      abortController.abort();
-    };
-
     try {
-      const chatHistory = await this.session?.getChatHistory();
+      const chatHistory = await this.session.getChatHistory();
       this.setStatus('ready', 'History retrieved');
       return chatHistory;
     } catch (err) {
-      callback();
+      this.errorCallback();
       this.setStatus('ready');
       return [];
     }
@@ -174,18 +157,13 @@ export class LlamaWrapper {
     }
 
     this.setStatus('loading', 'Loading chat history');
-    const abortController = new AbortController();
-
-    const callback = () => {
-      abortController.abort();
-    };
 
     try {
-      await this.session?.setChatHistory(chatHistoryItem);
+      await this.session.setChatHistory(chatHistoryItem);
       this.setStatus('ready', 'Chat history loaded');
       return;
     } catch (err) {
-      callback();
+      this.errorCallback();
       this.setStatus('ready', 'Chat history loaded not loaded');
       return;
     }
@@ -195,6 +173,10 @@ export class LlamaWrapper {
     console.log('Instantiating LlamaProvider');
     this.setStatus('uninitialized', 'Provider not initialized');
     this.id = uuidv4();
+    this.abortController = new AbortController();
+    this.errorCallback = () => {
+      this.abortController.abort();
+    };
     console.log('With id: ', this.id);
   }
 }
