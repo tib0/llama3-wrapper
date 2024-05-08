@@ -1,4 +1,4 @@
-import type { LlamaChatSession, ChatHistoryItem } from 'node-llama-cpp';
+import type { LlamaChatSession, ChatHistoryItem, LlamaModel, Llama } from 'node-llama-cpp';
 import { v4 as uuidv4 } from 'uuid';
 
 export type Gpu = false | 'auto' | 'cuda' | 'vulkan' | 'metal' | undefined;
@@ -13,12 +13,25 @@ export interface LlamaStatus {
 }
 
 export interface LlamaCppInfo {
-  repo: string;
-  release: string;
-  vramState: {
-    total: number;
-    used: number;
-    free: number;
+  id?: string;
+  model?: {
+    filename: string;
+    trainContextSize: number;
+  };
+  context?: {
+    batchSize: number;
+    contextSize: number;
+    sequencesLeft: number;
+    stateSize: number;
+    totalSequences: number;
+  };
+  llama?: {
+    vramState?: {
+      total: number;
+      used: number;
+      free: number;
+    };
+    devicesNames?: string[];
   };
 }
 
@@ -30,28 +43,12 @@ export class LlamaWrapper {
   private id: string;
   private session: LlamaChatSession | undefined;
   private status: LlamaStatus;
+  private model: LlamaModel | undefined;
   private errorCallback: () => void;
   private abortController: AbortController;
-
+  private module: typeof import("node-llama-cpp");
+  private llama: Llama;
   private setStatus(status: LlamaStatusType, payload?: string) {
-    if (payload === undefined) {
-      switch (status) {
-        case 'error':
-          payload = 'Provider encountered an error';
-          break;
-        case 'generating':
-          payload = 'Generating';
-          break;
-        case 'loading':
-          payload = 'Model loading';
-          break;
-        case 'ready':
-          payload = `Model ready`;
-          break;
-        case 'uninitialized':
-          payload = 'Provider uninitialized';
-      }
-    }
     this.status = { status, message: payload };
   }
 
@@ -67,37 +64,62 @@ export class LlamaWrapper {
     return this.id;
   }
 
-  async loadModel(modelPath: string, systemPrompt: string, gpu?: Gpu) {
-    if (!modelPath || modelPath === '') {
-      console.warn(`Ignoring attempt to load model, no path provided.`);
-      return;
+  public getInfos(): LlamaCppInfo {
+    let infos = {};
+
+    if (this.id) {
+      infos = {
+        ...infos,
+        id: this.id,
+      }
+    }
+    if (this.model) {
+      infos = {
+        ...infos,
+        model: {
+          filename: this.model.filename,
+          trainContextSize: this.model.trainContextSize,
+        },
+      }
     }
 
-    const module = await llamaModule();
+    if (this.session.context) {
+      infos = {
+        ...infos,
+        context: {
+          batchSize: this.session.context.batchSize,
+          contextSize: this.session.context.contextSize,
+          sequencesLeft: this.session.context.sequencesLeft,
+          stateSize: this.session.context.stateSize,
+          totalSequences: this.session.context.totalSequences,
+        },
+      }
+    }
+    if (this.llama) {
+      infos = {
+        ...infos,
+        llama: { 
+          vramState: this.llama.getVramState(),
+          devicesNames: this.llama.getGpuDeviceNames(),
+        },
+      }
+    }
+    return infos;
+  }
 
+  public disposeSession() {
+    this.session.dispose();
+  }
+
+  public clearHistory() {
+    this.session.sequence.clearHistory();
+  }
+
+  async loadModule() {
     try {
-      this.setStatus('loading', `Loading model from ${modelPath}`);
-
-      const llama = await module.getLlama({
-        logLevel: module.LlamaLogLevel.warn,
-        build: 'never',
-        progressLogs: false,
-        gpu: gpu || 'auto',
-      });
-
-      console.log(`Loading model.`);
-
-      const model = await llama.loadModel({
-        modelPath: modelPath,
-      });
-      console.log(`Model loaded. Context size is ${model.trainContextSize}; Instantiating new session.`);
-
-      const context = await model.createContext();
-
-      this.session = new module.LlamaChatSession({
-        contextSequence: context.getSequence(),
-        systemPrompt: systemPrompt,
-      });
+      this.setStatus('loading', `Loading module from Node Llama Cpp`);
+      this.module = await llamaModule();
+      console.debug(`Module loaded.`);
       this.setStatus('ready');
     } catch (err) {
       console.error(err);
@@ -105,9 +127,89 @@ export class LlamaWrapper {
     }
   }
 
+  async loadLlama(gpu?: Gpu) {
+    if (!this.module) {
+      throw new Error(`Ignoring attempt to load model, no module found.`);
+    }
+
+    try {
+      this.setStatus('loading', `Loading Llama lib`);
+
+      console.debug(`Loading llama.`);
+      this.llama = await this.module.getLlama({
+        logLevel: this.module.LlamaLogLevel.warn,
+        build: 'never',
+        progressLogs: false,
+        gpu: gpu || 'auto',
+      });
+
+      console.debug(`Llama loaded.`);
+
+      this.setStatus('ready');
+    } catch (err) {
+      console.error(err);
+      this.setStatus('error', String(err.message));
+    }
+  }
+
+  async loadModel(modelPath: string) {
+    if (!modelPath || modelPath === '') {
+      throw new Error(`Ignoring attempt to load model, no path provided.`);
+    }
+    if (!this.module) {
+      throw new Error(`Ignoring attempt to load model, no module found.`);
+    }
+    if (!this.llama) {
+      throw new Error(`Ignoring attempt to load model, no llama lib loaded.`);
+    }
+
+    try {
+      this.setStatus('loading', `Loading model from ${modelPath}`);
+
+      
+      console.debug(`Loading model.`);
+
+      this.model = await this.llama.loadModel({
+        modelPath: modelPath,
+      });
+      
+      console.debug(`Model loaded. Context size is ${this.model.trainContextSize}; Instantiating new session.`);
+
+      this.setStatus('ready');
+    } catch (err) {
+      console.error(err);
+      this.setStatus('error', String(err.message));
+    }
+  }
+
+  async initSession(systemPrompt: string) {
+    if (!this.model) {
+      throw new Error(`Ignoring attempt to init session, no model loaded.`);
+    }
+    if (!this.module) {
+      throw new Error(`Ignoring attempt to load model, no module found.`);
+    }
+
+    try {
+      this.setStatus('loading', `Initializing session`);
+      
+      const context = await this.model.createContext({ threads: 0, seed: 42, sequences: 2 });
+      
+      this.session = new this.module.LlamaChatSession({
+        contextSequence: context.getSequence(),
+        systemPrompt: systemPrompt,
+      });
+      
+      this.setStatus('ready');
+    } catch (err) {
+      console.error(err);
+      this.setStatus('error', String(err.message));
+    }
+  }
+  
   public async prompt(message: string, onToken?: (chunk: string) => void): Promise<string> {
     if (this.session === undefined) {
-      throw new Error('Cannot prompt model: None loaded');
+      throw new Error('Ignoring prompt, no session found');
     }
 
     this.setStatus('generating');
@@ -135,7 +237,7 @@ export class LlamaWrapper {
 
   public async getHistory(): Promise<ChatHistoryItem[]> {
     if (this.session === undefined) {
-      throw new Error('Cannot prompt model: None loaded');
+      throw new Error('Ignoring get history, no session found');
     }
 
     this.setStatus('generating');
@@ -153,7 +255,7 @@ export class LlamaWrapper {
 
   public async setHistory(chatHistoryItem: ChatHistoryItem[]): Promise<void> {
     if (this.session === undefined) {
-      throw new Error('Cannot prompt model: None loaded');
+      throw new Error('Ignoring set history, no session found');
     }
 
     this.setStatus('loading', 'Loading chat history');
@@ -170,13 +272,14 @@ export class LlamaWrapper {
   }
 
   constructor() {
-    console.log('Instantiating LlamaProvider');
-    this.setStatus('uninitialized', 'Provider not initialized');
+    console.debug('Instantiating LlamaWrapper');
+    this.setStatus('uninitialized', 'Wrapper not initialized');
     this.id = uuidv4();
     this.abortController = new AbortController();
     this.errorCallback = () => {
       this.abortController.abort();
+      if (this.session) this.session.dispose();
     };
-    console.log('With id: ', this.id);
+    console.debug('With id: ', this.id);
   }
 }
