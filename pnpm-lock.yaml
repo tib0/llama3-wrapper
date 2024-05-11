@@ -8,8 +8,11 @@ importers:
   .:
     dependencies:
       node-llama-cpp:
-        specifier: 3.0.0-beta.17
-        version: 3.0.0-beta.17(typescript@5.4.5)
+        specifier: 3.0.0-beta.18
+        version: 3.0.0-beta.18(typescript@5.4.5)
+      uuid:
+        specifier: ^9.0.1
+        version: 9.0.1
     devDependencies:
       '@tsconfig/node21':
         specifier: ^21.0.3
@@ -53,9 +56,6 @@ importers:
       typescript:
         specifier: ^5.4.5
         version: 5.4.5
-      uuid:
-        specifier: ^9.0.1
-        version: 9.0.1
 
 packages:
   '@ampproject/remapping@2.3.0':
@@ -2477,9 +2477,9 @@ packages:
     resolution:
       { integrity: sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw== }
 
-  node-llama-cpp@3.0.0-beta.17:
+  node-llama-cpp@3.0.0-beta.18:
     resolution:
-      { integrity: sha512-yW3rdZTvmUgAOoktWAZfwnXQUQ3vuZ2tkENXEQCIa57eeyN1T2kBDgRHrz/IU7ASugFPagYVUXrlNlL5LpVUgQ== }
+      { integrity: sha512-4c9vksetZipd2Anga0K8S4PweM9euLwx/Ce7wOMpi6FdPPZ5Wszt8CdbK9OiGTeMOkZ6VTf7JSU1Qin7rqcFFw== }
     engines: { node: '>=18.0.0' }
     hasBin: true
     peerDependencies:
@@ -5506,7 +5506,7 @@ snapshots:
 
   node-int64@0.4.0: {}
 
-  node-llama-cpp@3.0.0-beta.17(typescript@5.4.5):
+  node-llama-cpp@3.0.0-beta.18(typescript@5.4.5):
     dependencies:
       '@huggingface/jinja': 0.2.2
       async-retry: 1.3.3
