@@ -2,7 +2,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
-    '^.+\\.(j|t)sx?$': 'ts-jest',
+    'node_modules/node-llama-cpp/.+\\.(j|t)(s|sx)?$': 'ts-jest',
   },
-  transformIgnorePatterns: ['node_modules/(?!(node-llama-cpp)/)'],
+  transformIgnorePatterns: ['node_modules/(?!node-llama-cpp/.*)'],
 };
