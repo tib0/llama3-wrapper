@@ -1,40 +1,57 @@
-![logo](./.github/tnmt-logo.png)
+![logo](./.github/llama3-wrapper-banner.png)
 
 Lllama node cpp wrapper using Llama3 underneath.
 
-# USE
+# BUILDING FROM SOURCE
 
-Follow these steps to make it yours:
+By following the steps below, you can build and install the module from source code.
 
-1. Install module:
-
-```sh
-npm i llama-gen-post
-```
-
-Or
+1. Clone the repository:
 
 ```sh
-pnpm i llama-gen-post
+git clone https://github.com/tib0/llama3-wrapper.git
 ```
 
-Or
+2. Install dependencies:
 
 ```sh
-yarn add llama-gen-post
+cd ./llama3-wrapper
+pnpm i
 ```
 
-2. Add your GGUF model path in a .env file at the root of your project:
+3. Build the module:
 
 ```sh
-LLAMA_MODELS_LOCATION=/Users/me/example/models/
-LLAMA_MODEL_NAME=Meta-8b.gguf
+pnpm build
 ```
 
-3. Sample chat-like usage:
+4. Link the module globally:
+
+```sh
+pnpm link -g
+```
+
+5. In the target project folder use the module:
+
+```sh
+cd /path/to/target-project
+pnpm link -g llama3-wrapper
+```
+
+# CONFIGURATION
+
+Add your GGUF model path in a .env file at the root of your project:
+
+```sh
+LLAMA_MODELS_PATH=/Users/me/example/LLM/Models/my-model-file.gguf
+```
+
+# SAMPLES USAGE
+
+- Sample chat-like usage in terminal:
 
 ```ts
-import { session, type ChatHistoryItem } from 'llama-gen-post';
+import { type ChatHistoryItem, LlamaWrapper } from 'llama3-wrapper';
 import readline from 'readline';
 import { spawn } from 'node:child_process';
 
@@ -54,11 +71,12 @@ const run = async () => {
   ];
 
   console.log(`# Waiting seat allocation`);
-  const session = await _session(
-    'You are an assistant, you speak in english, you must be concise and helpfull.',
-    history,
-  );
 
+  const llamaNodeCPP = new LlamaWrapper();
+  await llamaNodeCPP.loadModule();
+  await llamaNodeCPP.loadLlama();
+  await llamaNodeCPP.loadModel(process.env.LLAMA_MODELS_PATH);
+  await llamaNodeCPP.initSession(promptSystem);
   console.log(`# Prompt ready`);
 
   console.log(`# Activated TTS (voice)`);
@@ -72,7 +90,7 @@ const run = async () => {
     if (!q || q === '' || q === 'exit' || q === 'quit' || q === 'q') {
       rl.close();
     } else {
-      const a = await session.prompt(q);
+      const a = await llamaNodeCPP.prompt(q);
       console.log(`${i} @ ${a}`);
       spawn('say', [a]);
       console.log(`\n`);
@@ -83,11 +101,11 @@ const run = async () => {
   }).on('close', async () => {
     console.log(`\n`);
     console.log(`Disposing session...`);
-    session.dispose();
-
+    await llamaNodeCPP.disposeSession();
     console.log(`\n`);
-    const a = session.getChatHistory();
-    console.log(`History @ ${JSON.stringify(a)}`);
+    const a = await llamaNodeCPP.getHistory();
+    console.log(`History:`);
+    console.log(JSON.stringify(a));
 
     console.log(`\n`);
     console.log('# END LLAMA CHAT');
