@@ -1,4 +1,4 @@
-import type { LlamaChatSession, ChatHistoryItem, LlamaModel, Llama } from 'node-llama-cpp';
+import { type LlamaChatSession, type ChatHistoryItem, type LlamaModel, type Llama } from 'node-llama-cpp';
 import { v4 as uuidv4 } from 'uuid';
 
 export type Gpu = false | 'auto' | 'cuda' | 'vulkan' | 'metal' | undefined;
@@ -73,6 +73,7 @@ export class LlamaWrapper {
         id: this.id,
       };
     }
+
     if (this.model) {
       infos = {
         ...infos,
@@ -95,6 +96,7 @@ export class LlamaWrapper {
         },
       };
     }
+
     if (this.llama) {
       infos = {
         ...infos,
@@ -104,6 +106,7 @@ export class LlamaWrapper {
         },
       };
     }
+
     return infos;
   }
 
